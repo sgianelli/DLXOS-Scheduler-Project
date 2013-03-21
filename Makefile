@@ -44,6 +44,11 @@ dlxos.o: dlxos.s
 usertraps.o: usertraps.s
 	$(CC) -c usertraps.s
 
+idleprog: idleprog.o
+	$(CC) -mtraps -O3 idleprog.o misc.o -o idleprog.dlx
+	$(AS) -l idleprog.lst idleprog.dlx
+	mv idleprog.dlx.obj ../execs
+
 userprog3 : userprog3.o usertraps.o misc.o
 	$(CC) -mtraps -O3 userprog3.o usertraps.o misc.o -o userprog3.dlx
 	$(AS) -l userprog3.lst userprog3.dlx
