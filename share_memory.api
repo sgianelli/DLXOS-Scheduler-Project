@@ -1,0 +1,947 @@
+; Compiled by GCC
+.text
+	.align 2
+.proc _isspace
+.global _isspace
+_isspace:
+;  Function 'isspace'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	lb	r2,3(r30)
+	addi	r31,r0,#0
+	andi	r1,r2,#0x00ff
+	seqi	r1,r1,#32
+	bnez	r1,L6
+	nop	; not filled.
+	addi	r1,r2,#-9
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#1
+	beqz	r1,L5
+	nop	; not filled.
+L6:
+	addi	r31,r0,#1
+L5:
+	add	r1,r0,r31
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _isspace
+	.align 2
+.proc _isxdigit
+.global _isxdigit
+_isxdigit:
+;  Function 'isxdigit'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	lb	r31,3(r30)
+	addi	r2,r0,#0
+	addi	r1,r31,#-48
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#9
+	bnez	r1,L12
+	nop	; not filled.
+	addi	r1,r31,#-97
+	andi	r1,r1,#0x00ff
+	sleui	r1,r1,#5
+	bnez	r1,L12
+	nop	; not filled.
+	andi	r1,r31,#0x00ff
+	snei	r1,r1,#65
+	bnez	r1,L11
+	nop	; not filled.
+L12:
+	addi	r2,r0,#1
+L11:
+	add	r1,r0,r2
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _isxdigit
+	.align 2
+.proc _DisableIntrs
+.global _DisableIntrs
+_DisableIntrs:
+;  Function 'DisableIntrs'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	addi	r29,r29,#-8
+	addi	r2,r0,#15
+	sw	(r29),r2
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _DisableIntrs
+	.align 2
+.proc _EnableIntrs
+.global _EnableIntrs
+_EnableIntrs:
+;  Function 'EnableIntrs'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	addi	r29,r29,#-8
+	addi	r2,r0,#0
+	sw	(r29),r2
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _EnableIntrs
+	.align 2
+.proc _RestoreIntrs
+.global _RestoreIntrs
+_RestoreIntrs:
+;  Function 'RestoreIntrs'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	addi	r29,r29,#-8
+	lw	r2,(r30)
+	sw	(r29),r2
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _RestoreIntrs
+	.align 2
+.proc _QueueLinkInit
+.global _QueueLinkInit
+_QueueLinkInit:
+;  Function 'QueueLinkInit'; 0 bytes of locals, 1 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	lw	r1,(r30)
+	lw	r2,4(r30)
+	addi	r31,r0,#0
+	sw	(r1),r31
+	sw	12(r1),r2
+	lw	r2,0(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueLinkInit
+	.align 2
+.proc _QueueNext
+.global _QueueNext
+_QueueNext:
+;  Function 'QueueNext'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,(r1)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueNext
+	.align 2
+.proc _QueuePrev
+.global _QueuePrev
+_QueuePrev:
+;  Function 'QueuePrev'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,4(r1)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueuePrev
+	.align 2
+.proc _QueueFirst
+.global _QueueFirst
+_QueueFirst:
+;  Function 'QueueFirst'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,(r1)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueFirst
+	.align 2
+.proc _QueueLast
+.global _QueueLast
+_QueueLast:
+;  Function 'QueueLast'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,4(r1)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueLast
+	.align 2
+.proc _QueueInsertAfter
+.global _QueueInsertAfter
+_QueueInsertAfter:
+;  Function 'QueueInsertAfter'; 0 bytes of locals, 2 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	lw	r3,(r30)
+	lw	r2,4(r30)
+	lw	r1,8(r30)
+	sw	8(r1),r3
+	sw	4(r1),r2
+	lw	r31,(r2)
+	sw	(r1),r31
+	sw	(r2),r1
+	lw	r2,(r1)
+	sw	4(r2),r1
+	lw	r1,8(r3)
+	addi	r1,r1,#1
+	sw	8(r3),r1
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueInsertAfter
+	.align 2
+.proc _QueueInsertFirst
+.global _QueueInsertFirst
+_QueueInsertFirst:
+;  Function 'QueueInsertFirst'; 0 bytes of locals, 2 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	lw	r3,(r30)
+	lw	r1,4(r30)
+	sw	8(r1),r3
+	sw	4(r1),r3
+	lw	r31,(r3)
+	sw	(r1),r31
+	sw	(r3),r1
+	lw	r2,(r1)
+	sw	4(r2),r1
+	lw	r1,8(r3)
+	addi	r1,r1,#1
+	sw	8(r3),r1
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueInsertFirst
+	.align 2
+.proc _QueueInsertLast
+.global _QueueInsertLast
+_QueueInsertLast:
+;  Function 'QueueInsertLast'; 0 bytes of locals, 2 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	lw	r3,(r30)
+	lw	r1,4(r30)
+	lw	r2,4(r3)
+	sw	8(r1),r3
+	sw	4(r1),r2
+	lw	r31,(r2)
+	sw	(r1),r31
+	sw	(r2),r1
+	lw	r2,(r1)
+	sw	4(r2),r1
+	lw	r1,8(r3)
+	addi	r1,r1,#1
+	sw	8(r3),r1
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueInsertLast
+	.align 2
+.proc _QueueRemove
+.global _QueueRemove
+_QueueRemove:
+;  Function 'QueueRemove'; 0 bytes of locals, 2 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#16	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	lw	r31,(r30)
+	lw	r1,8(r31)
+	lw	r1,8(r1)
+	sgti	r1,r1,#0
+	beqz	r1,L44
+	nop	; not filled.
+	lw	r1,4(r31)
+	lw	r3,(r31)
+	sw	(r1),r3
+	lw	r1,(r31)
+	lw	r3,4(r31)
+	sw	4(r1),r3
+	lw	r2,8(r31)
+	lw	r1,8(r2)
+	addi	r1,r1,#-1
+	sw	8(r2),r1
+L44:
+	addi	r3,r0,#0
+	sw	(r31),r3
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueRemove
+	.align 2
+.proc _QueueLength
+.global _QueueLength
+_QueueLength:
+;  Function 'QueueLength'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,8(r1)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueLength
+	.align 2
+.proc _QueueEmpty
+.global _QueueEmpty
+_QueueEmpty:
+;  Function 'QueueEmpty'; 0 bytes of locals, 0 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#8	; alloc local storage
+	lw	r1,(r30)
+	lw	r1,8(r1)
+	seqi	r1,r1,#0
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _QueueEmpty
+.data
+	.align 2
+LC0:
+	.ascii "Entering ProcessModuleInit\n\000"
+	.align 2
+LC1:
+	.ascii "Leaving ProcessModuleInit\n\000"
+.text
+	.align 2
+.proc _ShareModuleInit
+.global _ShareModuleInit
+_ShareModuleInit:
+;  Function 'ShareModuleInit'; 0 bytes of locals, 4 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#24	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	sw	8(r29),r4
+	sw	12(r29),r5
+	addi	r29,r29,#-8
+	lhi	r2,((_debugstr)>>16)&0xffff
+	addui	r2,r2,(_debugstr)&0xffff
+	sw	(r29),r2
+	addi	r5,r0,#112
+	sw	4(r29),r5
+	jal	_dindex
+	nop	; not filled.
+	addi	r29,r29,#8
+	snei	r1,r1,#0
+	bnez	r1,L64
+	nop	; not filled.
+	addi	r29,r29,#-8
+	sw	(r29),r2
+	addi	r5,r0,#43
+	sw	4(r29),r5
+	jal	_dindex
+	nop	; not filled.
+	addi	r29,r29,#8
+	snei	r1,r1,#0
+	beqz	r1,L63
+	nop	; not filled.
+L64:
+	addi	r29,r29,#-8
+	lhi	r5,((LC0)>>16)&0xffff
+	addui	r5,r5,(LC0)&0xffff
+	sw	(r29),r5
+	jal	_printf
+	nop	; not filled.
+	addi	r29,r29,#8
+L63:
+	lhi	r2,((_spages)>>16)&0xffff
+	addui	r2,r2,(_spages)&0xffff
+	addi	r4,r2,#248
+L68:
+	addi	r5,r0,#0
+	sw	(r2),r5
+	add	r31,r0,r2
+	add	r3,r0,r2
+L72:
+	addi	r1,r31,#4
+	addi	r5,r0,#0
+	sw	(r1),r5
+	add	r31,r0,r1
+	sle	r1,r31,r3
+	bnez	r1,L72
+	nop	; not filled.
+	addi	r2,r2,#8
+	sle	r1,r2,r4
+	bnez	r1,L68
+	nop	; not filled.
+	addi	r29,r29,#-8
+	lhi	r2,((_debugstr)>>16)&0xffff
+	addui	r2,r2,(_debugstr)&0xffff
+	sw	(r29),r2
+	addi	r5,r0,#112
+	sw	4(r29),r5
+	jal	_dindex
+	nop	; not filled.
+	addi	r29,r29,#8
+	snei	r1,r1,#0
+	bnez	r1,L76
+	nop	; not filled.
+	addi	r29,r29,#-8
+	sw	(r29),r2
+	addi	r5,r0,#43
+	sw	4(r29),r5
+	jal	_dindex
+	nop	; not filled.
+	addi	r29,r29,#8
+	snei	r1,r1,#0
+	beqz	r1,L75
+	nop	; not filled.
+L76:
+	addi	r29,r29,#-8
+	lhi	r5,((LC1)>>16)&0xffff
+	addui	r5,r5,(LC1)&0xffff
+	sw	(r29),r5
+	jal	_printf
+	nop	; not filled.
+	addi	r29,r29,#8
+L75:
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r4,8(r29)
+	lw	r5,12(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _ShareModuleInit
+.data
+	.align 2
+LC2:
+	.ascii "FATAL: couldn\'t allocate memory - no free pages!\n\000"
+.text
+	.align 2
+.proc _MemoryCreateSharedPage
+.global _MemoryCreateSharedPage
+_MemoryCreateSharedPage:
+;  Function 'MemoryCreateSharedPage'; 0 bytes of locals, 9 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#48	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	sw	8(r29),r4
+	sw	12(r29),r5
+	sw	16(r29),r6
+	sw	20(r29),r7
+	sw	24(r29),r8
+	sw	28(r29),r9
+	sw	32(r29),r10
+	lw	r6,(r30)
+	addi	r29,r29,#-8
+	sw	(r29),r6
+	jal	_findpid
+	nop	; not filled.
+	add	r5,r0,r1
+	srli	r8,r5,#0x5
+	slli	r1,r8,#0x5
+	sub	r5,r5,r1
+	addi	r29,r29,#8
+	addi	r29,r29,#-8
+	addi	r10,r0,#15
+	sw	(r29),r10
+	jal	_SetIntrs
+	nop	; not filled.
+	add	r7,r0,r1
+	addi	r29,r29,#8
+	lw	r1,160(r6)
+	seqi	r1,r1,#16
+	bnez	r1,L92
+	nop	; not filled.
+	addi	r3,r0,#0
+	lhi	r9,((_spages)>>16)&0xffff
+	addui	r9,r9,(_spages)&0xffff
+	add	r2,r0,r9
+L84:
+	lw	r1,(r2)
+	snei	r1,r1,#0
+	beqz	r1,L82
+	nop	; not filled.
+	addi	r2,r2,#8
+	addi	r3,r3,#1
+	slei	r1,r3,#31
+	bnez	r1,L84
+	nop	; not filled.
+L82:
+	seqi	r1,r3,#32
+	beqz	r1,L87
+	nop	; not filled.
+L92:
+	addi	r29,r29,#-8
+	sw	(r29),r7
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	addi	r1,r0,#0
+	j	L91
+	nop	; not filled.
+L87:
+	jal	_MemoryAllocPage
+	nop	; not filled.
+	add	r4,r0,r1
+	snei	r1,r4,#0
+	bnez	r1,L89
+	nop	; not filled.
+	addi	r29,r29,#-8
+	lhi	r10,((LC2)>>16)&0xffff
+	addui	r10,r10,(LC2)&0xffff
+	sw	(r29),r10
+	jal	_printf
+	nop	; not filled.
+	jal	_exitsim
+	nop	; not filled.
+	addi	r29,r29,#8
+L89:
+	slli	r1,r3,#0x3
+	add	r2,r1,r9
+	sw	(r2),r4
+	slli	r1,r8,#0x2
+	add	r2,r1,r2
+	addi	r1,r0,#1
+	sll	r1,r1,r5
+	sw	4(r2),r1
+	addi	r29,r29,#-8
+	sw	(r29),r4
+	jal	_MemorySetupPte
+	nop	; not filled.
+	lw	r2,160(r6)
+	slli	r2,r2,#0x2
+	add	r2,r2,r6
+	sw	96(r2),r1
+	lw	r1,160(r6)
+	addi	r2,r1,#1
+	sw	160(r6),r2
+	lw	r1,8(r6)
+	addui	r1,r1,#65164
+	sw	316(r1),r2
+	addi	r29,r29,#8
+	addi	r29,r29,#-8
+	sw	(r29),r7
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	add	r1,r0,r4
+L91:
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r4,8(r29)
+	lw	r5,12(r29)
+	lw	r6,16(r29)
+	lw	r7,20(r29)
+	lw	r8,24(r29)
+	lw	r9,28(r29)
+	lw	r10,32(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _MemoryCreateSharedPage
+	.align 2
+.proc _mmap
+.global _mmap
+_mmap:
+;  Function 'mmap'; 0 bytes of locals, 9 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#48	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	sw	8(r29),r4
+	sw	12(r29),r5
+	sw	16(r29),r6
+	sw	20(r29),r7
+	sw	24(r29),r8
+	sw	28(r29),r9
+	sw	32(r29),r10
+	lw	r6,(r30)
+	lw	r7,4(r30)
+	snei	r1,r7,#0
+	bnez	r1,L94
+	nop	; not filled.
+	addi	r1,r0,#0
+	j	L115
+	nop	; not filled.
+L94:
+	lw	r1,8(r6)
+	addui	r9,r1,#65164
+	addi	r29,r29,#-8
+	addi	r10,r0,#15
+	sw	(r29),r10
+	jal	_SetIntrs
+	nop	; not filled.
+	add	r8,r0,r1
+	addi	r29,r29,#8
+	addi	r3,r0,#0
+	lhi	r2,((_spages)>>16)&0xffff
+	addui	r2,r2,(_spages)&0xffff
+L99:
+	lw	r1,(r2)
+	seq	r1,r1,r7
+	bnez	r1,L97
+	nop	; not filled.
+	addi	r2,r2,#8
+	addi	r3,r3,#1
+	sleui	r1,r3,#31
+	bnez	r1,L99
+	nop	; not filled.
+L97:
+	seqi	r1,r3,#32
+	bnez	r1,L116
+	nop	; not filled.
+	slli	r31,r7,#0x10
+	addi	r5,r0,#0
+	lw	r4,160(r6)
+	slt	r1,r5,r4
+	beqz	r1,L105
+	nop	; not filled.
+	add	r2,r0,r6
+L107:
+	lw	r1,96(r2)
+	addi	r10,r0,#-8
+	and	r1,r1,r10
+	seq	r1,r1,r31
+	bnez	r1,L105
+	nop	; not filled.
+	addi	r2,r2,#4
+	addi	r5,r5,#1
+	slt	r1,r5,r4
+	bnez	r1,L107
+	nop	; not filled.
+L105:
+	lw	r2,160(r6)
+	seq	r1,r5,r2
+	beqz	r1,L110
+	nop	; not filled.
+	slei	r1,r2,#15
+	bnez	r1,L111
+	nop	; not filled.
+L116:
+	addi	r29,r29,#-8
+	sw	(r29),r8
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	addi	r1,r0,#0
+	j	L115
+	nop	; not filled.
+L111:
+	addi	r29,r29,#-8
+	sw	(r29),r7
+	jal	_MemorySetupPte
+	nop	; not filled.
+	lw	r2,160(r6)
+	slli	r2,r2,#0x2
+	add	r2,r2,r6
+	sw	96(r2),r1
+	lw	r1,160(r6)
+	addi	r1,r1,#1
+	sw	160(r6),r1
+	sw	316(r9),r1
+	addi	r29,r29,#8
+L110:
+	addi	r29,r29,#-8
+	sw	(r29),r6
+	jal	_findpid
+	nop	; not filled.
+	add	r2,r0,r1
+	srli	r4,r2,#0x5
+	slli	r1,r4,#0x5
+	sub	r2,r2,r1
+	slli	r3,r3,#0x3
+	slli	r1,r4,#0x2
+	add	r1,r3,r1
+	lhi	r10,((_spages+4)>>16)&0xffff
+	addui	r10,r10,(_spages+4)&0xffff
+	add	r3,r1,r10
+	addi	r1,r0,#1
+	sll	r2,r1,r2
+	lw	r1,(r3)
+	or	r1,r1,r2
+	sw	(r3),r1
+	addi	r29,r29,#8
+	addi	r29,r29,#-8
+	sw	(r29),r8
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	slli	r1,r5,#0x10
+L115:
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r4,8(r29)
+	lw	r5,12(r29)
+	lw	r6,16(r29)
+	lw	r7,20(r29)
+	lw	r8,24(r29)
+	lw	r9,28(r29)
+	lw	r10,32(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _mmap
+.data
+	.align 2
+LC3:
+	.ascii "FATAL: Attempted to free memory page 0\n\000"
+.text
+	.align 2
+.proc _MemoryFreeSharedPte
+.global _MemoryFreeSharedPte
+_MemoryFreeSharedPte:
+;  Function 'MemoryFreeSharedPte'; 0 bytes of locals, 9 regs to save.
+	sw	-4(r29),r30	; push fp
+	add	r30,r0,r29	; fp = sp
+	sw	-8(r29),r31	; push ret addr
+	subui	r29,r29,#48	; alloc local storage
+	sw	0(r29),r2
+	sw	4(r29),r3
+	sw	8(r29),r4
+	sw	12(r29),r5
+	sw	16(r29),r6
+	sw	20(r29),r7
+	sw	24(r29),r8
+	sw	28(r29),r9
+	sw	32(r29),r10
+	lw	r8,(r30)
+	lw	r2,4(r30)
+	addi	r29,r29,#-8
+	addi	r10,r0,#15
+	sw	(r29),r10
+	jal	_SetIntrs
+	nop	; not filled.
+	add	r9,r0,r1
+	addi	r29,r29,#8
+	slli	r1,r2,#0x2
+	add	r1,r1,r8
+	lhu	r7,96(r1)
+	snei	r1,r7,#0
+	bnez	r1,L119
+	nop	; not filled.
+	addi	r29,r29,#-8
+	lhi	r10,((LC3)>>16)&0xffff
+	addui	r10,r10,(LC3)&0xffff
+	sw	(r29),r10
+	jal	_printf
+	nop	; not filled.
+	jal	_exitsim
+	nop	; not filled.
+	addi	r29,r29,#8
+L119:
+	addi	r4,r0,#0
+	lhi	r5,((_spages)>>16)&0xffff
+	addui	r5,r5,(_spages)&0xffff
+	add	r2,r0,r5
+L123:
+	lw	r1,(r2)
+	seq	r1,r1,r7
+	bnez	r1,L121
+	nop	; not filled.
+	addi	r2,r2,#8
+	addi	r4,r4,#1
+	slei	r1,r4,#31
+	bnez	r1,L123
+	nop	; not filled.
+L121:
+	seqi	r1,r4,#32
+	beqz	r1,L126
+	nop	; not filled.
+	addi	r29,r29,#-8
+	sw	(r29),r9
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	addi	r1,r0,#-1
+	j	L141
+	nop	; not filled.
+L126:
+	addi	r29,r29,#-8
+	sw	(r29),r8
+	jal	_findpid
+	nop	; not filled.
+	add	r2,r0,r1
+	srli	r3,r1,#0x5
+	slli	r1,r3,#0x5
+	sub	r2,r2,r1
+	slli	r1,r4,#0x3
+	add	r4,r1,r5
+	slli	r1,r3,#0x2
+	add	r1,r1,r4
+	addi	r3,r1,#4
+	addi	r1,r0,#1
+	sll	r1,r1,r2
+	addi	r10,r0,#-1
+	xor	r2,r1,r10
+	lw	r1,(r3)
+	and	r1,r1,r2
+	sw	(r3),r1
+	addi	r29,r29,#8
+	addi	r6,r0,#0
+	addi	r5,r0,#0
+L132:
+	addi	r3,r0,#1
+	addi	r2,r0,#0
+	lw	r31,4(r4)
+L136:
+	and	r1,r31,r3
+	snei	r1,r1,#0
+	add	r6,r6,r1
+	slli	r3,r3,#0x1
+	addi	r2,r2,#1
+	slei	r1,r2,#31
+	bnez	r1,L136
+	nop	; not filled.
+	addi	r4,r4,#4
+	addi	r5,r5,#1
+	slei	r1,r5,#0
+	bnez	r1,L132
+	nop	; not filled.
+	lw	r1,160(r8)
+	addi	r2,r1,#-1
+	sw	160(r8),r2
+	lw	r1,8(r8)
+	addui	r1,r1,#65164
+	sw	316(r1),r2
+	snei	r1,r6,#0
+	bnez	r1,L139
+	nop	; not filled.
+	addi	r29,r29,#-8
+	sw	(r29),r7
+	jal	_MemoryFreePage
+	nop	; not filled.
+	addi	r29,r29,#8
+L139:
+	addi	r29,r29,#-8
+	sw	(r29),r9
+	jal	_SetIntrs
+	nop	; not filled.
+	addi	r29,r29,#8
+	add	r1,r0,r6
+L141:
+	lw	r2,0(r29)
+	lw	r3,4(r29)
+	lw	r4,8(r29)
+	lw	r5,12(r29)
+	lw	r6,16(r29)
+	lw	r7,20(r29)
+	lw	r8,24(r29)
+	lw	r9,28(r29)
+	lw	r10,32(r29)
+	lw	r31,-8(r30)
+	add	r29,r0,r30
+	lw	r30,-4(r30)
+	jr	r31
+	nop
+.endproc _MemoryFreeSharedPte
+.data
+	.align 2
+_spages:
+	.space 256

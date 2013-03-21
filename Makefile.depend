@@ -1,0 +1,8 @@
+filesys.o: filesys.c dlxos.h misc.h process.h queue.h filesys.h
+memory.o: memory.c dlxos.h misc.h memory.h process.h queue.h
+misc.o: misc.c misc.h
+process.o: process.c dlxos.h misc.h process.h queue.h memory.h \
+ filesys.h
+queue.o: queue.c dlxos.h misc.h queue.h
+traps.o: traps.c dlx.h dlxos.h misc.h traps.h process.h queue.h
+sysproc.o: sysproc.c process.h dlxos.h misc.h queue.h
