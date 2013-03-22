@@ -422,6 +422,19 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
 
   //---------------------------------------
   // Lab3: initialized pcb member for your scheduling algorithm here
+  // BEGIN BRIAN CODE
+  if((isUser && p_nice < 0) || p_nice > 19) {  // p_nice should never be greater than 19
+     pcb->p_nice = 0;
+  }
+  else pcb->p_nice = p_nice;
+  pcb->estcpu		= 0;
+  pcb->runtime		= 0;
+  pcb->sleeptime	= 0;
+  pcb->prio		= PUSER;
+  pcb->runQueueNum	= (pcb->prio)/4;
+  pcb->load		= 1;
+  pcb->p_info		= p_info;
+  // END BRIAN CODE
   //--------------------------------------
 
 
