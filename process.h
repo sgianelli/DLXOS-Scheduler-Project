@@ -47,6 +47,14 @@ typedef struct PCB {
   int		npages;		// Number of pages allocated to this process
   Link		l;		// Used for keeping PCB in queues
   // put in data used for your scheduling algorithm here
+  // BEGIN BRIAN CODE
+  int		p_nice;
+  float		estcpu;
+  int		runtime;
+  int		sleeptime;
+  int		prio;
+  int		runQueue;
+  // END BRIAN CODE
 } PCB;
 
 // Offsets of various registers from the stack pointer in the register
