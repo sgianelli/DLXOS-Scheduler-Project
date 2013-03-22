@@ -53,7 +53,7 @@ typedef struct PCB {
   int		runtime;
   int		sleeptime;
   int		prio;
-  int		runQueue;
+  int		runQueueNum;
   // END BRIAN CODE
 } PCB;
 
