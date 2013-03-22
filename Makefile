@@ -15,7 +15,7 @@ INCS = dlxos.h traps.h filesys.h memory.h misc.h process.h queue.h \
 SRCS = filesys.c memory.c misc.c process.c queue.c traps.c sysproc.c 
 OBJS = $(addsuffix .o, $(basename $(SRCS)))
 
-all: os.dlx.obj  userprog3 userprog4
+all: os.dlx.obj  userprog3 userprog4 idleprog
 
 part2: os.dlx.obj userprog3 userprog4 
 

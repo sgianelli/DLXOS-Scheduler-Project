@@ -739,6 +739,7 @@ ProcessGetFromFile (int fd, unsigned char *buf, uint32 *addr, int max)
 	    seekpos + lpos - localbuf, nbytes);
   return (nbytes);
 }
+
 
 //----------------------------------------------------------------------
 //
@@ -766,7 +767,7 @@ main (int argc, char *argv[])
   	 	   NULL, NULL, NULL, NULL};
   int base;
 
-  debugstr[0] = 'p';
+//  debugstr[0] = 'p';
   debugstr[4] = '\0';
   MyFuncRetZero();
   printf ("Got %d arguments.\n", argc);
@@ -859,6 +860,7 @@ main (int argc, char *argv[])
 		     param[10], param[11]);
 //    ProcessFork (0, (uint32)"Help Me man!", userprog, 1);
   }
+
   SysprocCreateProcesses ();
   dbprintf ('i', "Created processes - about to set timer quantum.\n");
   TimerSet (processQuantum);
