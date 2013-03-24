@@ -48,15 +48,15 @@ typedef struct PCB {
   Link		l;		// Used for keeping PCB in queues
   // put in data used for your scheduling algorithm here
   // BEGIN BRIAN CODE
-  int		p_nice;
-  float		estcpu;
-  int		runtime;
-  int		sleeptime;
-  int		prio;
-  int		runQueueNum;
-  int		load;
-  int		p_info;
-  int		p_quanta;
+  int	          	p_nice;
+  unsigned long		estcpu; // Time (in micros) 
+  int	          	runtime;
+  unsigned long  	sleeptime; // Time asleep (in micros)
+  int	           	prio;
+  int	          	runQueueNum;
+  int	          	load;
+  int	          	p_info;
+  int	          	p_quanta; // Number of quanta the PCB has run in total
   // END BRIAN CODE
 } PCB;
 

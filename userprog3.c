@@ -142,19 +142,19 @@ main (int argc, char *argv[])
     switch(argc)
     {
         case 2:
-            Printf("timer = %d\n", TimerGet());
+            Printf("a timer = %d\n", TimerGet());
             number = dstrtol(argv[1], NULL, 10);
             Printf("Setting number = %d\n", number);
 
             for(i=0; i<50; i++)
                 Printf("1");
 
-            Printf("timer = %d\n", TimerGet());
+            Printf("b timer = %d\n", TimerGet());
 
             semaphore = sem_create(1);
             ditoa(semaphore, semaphore_str);	//Convert the semaphore to a string
 
-            Printf("timer = %d\n", TimerGet());
+            Printf("c timer = %d\n", TimerGet());
 
             for(i=0; i<number; i++)
             {
@@ -162,7 +162,7 @@ main (int argc, char *argv[])
                 process_create(i,0,"userprog4.dlx.obj", num_str,semaphore_str,
                         NULL);
             }
-            Printf("timer = %d\n", TimerGet());
+            Printf("d timer = %d\n", TimerGet());
             yield();
             break;
         case 3:

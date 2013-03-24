@@ -20,114 +20,114 @@
 #define	QUEUE_MAX_LINKS		400
 
 typedef struct Link {
-    struct Link	*next;
-    struct Link *prev;
-    struct Queue *queue;
-    void	*object;
+  struct Link	*next;
+  struct Link *prev;
+  struct Queue *queue;
+  void	*object;
 } Link;
 
 typedef struct Queue {
-    struct Link *first;
-    struct Link *last;
-    int		nitems;
+  struct Link *first;
+  struct Link *last;
+  int		nitems;
 } Queue;
 
 inline
-void
+  void
 QueueLinkInit (Link *l, void *obj)
 {
-    l->next = NULL;
-    l->object = obj;
+  l->next = NULL;
+  l->object = obj;
 }
 
 inline
-Link *
+  Link *
 QueueNext (Link *l)
 {
-    return (l->next);
+  return (l->next);
 }
 
 inline
-Link *
+  Link *
 QueuePrev (Link *l)
 {
-    return (l->prev);
+  return (l->prev);
 }
 
 inline
-Link *
+  Link *
 QueueFirst (Queue *q)
 {
-    return (q->first);
+  return (q->first);
 }
 
 inline
-Link *
+  Link *
 QueueLast (Queue *q)
 {
-    return (q->last);
+  return (q->last);
 }
 
 
 inline
-void
+  void
 QueueInsertAfter (Queue *q, Link *after, Link *l)
 {
-    l->queue = q;
-    l->prev = after;
-    l->next = after->next;
-    after->next = l;
-    l->next->prev = l;
-    q->nitems += 1;
+  l->queue = q;
+  l->prev = after;
+  l->next = after->next;
+  after->next = l;
+  l->next->prev = l;
+  q->nitems += 1;
 }
 
 inline
-void
+  void
 QueueInsertFirst (Queue *q, Link *l)
 {
-    QueueInsertAfter (q, (Link *)q, l);
+  QueueInsertAfter (q, (Link *)q, l);
 }
 
 inline
-void
+  void
 QueueInsertLast (Queue *q, Link *l)
 {
-    QueueInsertAfter (q, QueueLast(q), l);
+  QueueInsertAfter (q, QueueLast(q), l);
 }
 
 inline
-void
+  void
 QueueRemove (Link *l)
 {
-    if (l->queue->nitems > 0) {
-	l->prev->next = l->next;
-	l->next->prev = l->prev;
-	l->queue->nitems -= 1;
-    }
-    l->next = NULL;
+  if (l->queue->nitems > 0) {
+    l->prev->next = l->next;
+    l->next->prev = l->prev;
+    l->queue->nitems -= 1;
+  }
+  l->next = NULL;
 }
 
 inline
-int
+  int
 QueueLength (Queue *q)
 {
-    return (q->nitems);
+  return (q->nitems);
 }
 
 inline
-int
+  int
 QueueEmpty (Queue *q)
 {
-    return (QueueLength (q) == 0);
+  return (QueueLength (q) == 0);
 }
 
 inline
 void
 LinkMoveToLast(Link *l) {
-    Queue *q = l->queue;
-    QueueRemove(l);
-    
-    QueueInsertLast(q, l);
+  Queue *q = l->queue;
+  QueueRemove(l);
+
+  QueueInsertLast(q, l);
 }
 
 extern void	QueueModuleInit ();

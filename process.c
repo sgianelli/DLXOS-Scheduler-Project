@@ -28,6 +28,9 @@ float MyFuncRetZero();
 #define TOTAL_QUANTA_MAX 10
 #define PROCESS_QUANTA_MAX 4
 
+#define FALSE 0
+#define TRUE 1
+
 // Pointer to the current PCB.  This is used by the assembly language
 // routines for context switches.
 PCB		*currentPCB;
@@ -74,7 +77,7 @@ static int totalQuanta = 0;
 //	and available).  We also need to initialize all of the queues.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessModuleInit ()
 {
   int		i;
@@ -102,7 +105,7 @@ ProcessModuleInit ()
 //	Set the status of a process.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessSetStatus (PCB *pcb, int status)
 {
   pcb->flags &= ~PROCESS_STATUS_MASK;
@@ -117,7 +120,7 @@ ProcessSetStatus (PCB *pcb, int status)
 //	process isn't currently on any queue.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessFreeResources (PCB *pcb)
 {
   int		i;
@@ -131,9 +134,9 @@ ProcessFreeResources (PCB *pcb)
   for (i=0; i<npages; i++)
   {
     MemoryFreeSharedPte(pcb, i); // *MUST* be called before calling
-    				 // MemoryFreePte. MemoryFreePte does not know
-				 // anything about shared pages, and hence it
-				 // might screw up big time
+    // MemoryFreePte. MemoryFreePte does not know
+    // anything about shared pages, and hence it
+    // might screw up big time
   }
   for (i = 0; i < pcb->npages; i++) {
     MemoryFreePte (pcb->pagetable[i]);
@@ -155,13 +158,35 @@ ProcessFreeResources (PCB *pcb)
 //	results.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessSetResult (PCB * pcb, uint32 result)
 {
   pcb->currentSavedFrame[PROCESS_STACK_IREG+1] = result;
 }
 
-
+//----------------------------------------------------------------------
+//
+//  ProcessNext
+//
+//  Grabs the next process that should be run
+//
+//----------------------------------------------------------------------
+
+PCB *
+ProcessNext() {
+  PCB *ret = NULL;
+  int i;
+
+  for (i = 0; i < 32; i++) {
+    if ((&runQueue[i])->nitems != 0) {
+      ret = (PCB *)(QueueFirst(&runQueue[i])->object);
+      break;
+    }
+  }
+
+  return ret;
+}
+
 //----------------------------------------------------------------------
 //
 //	ProcessSchedule
@@ -185,58 +210,107 @@ ProcessSetResult (PCB * pcb, uint32 result)
 //----------------------------------------------------------------------
 // You should modify this function to use 4.4BSD scheduling policy
 //
-void
+  void
 ProcessSchedule ()
 {
   PCB           *pcb;
   int           i;
+  int           atEndOfQueue; // To be used as a boolean value
+  Link          *l;
 
-  dbprintf ('p', "Now entering ProcessSchedule (cur=0x%x, %d ready)\n",
-            currentPCB, QueueLength (&runQueue));
   // The OS exits if there's no runnable process.  This is a feature, not a
   // bug.  An easy solution to allowing no runnable "user" processes is to
   // have an "idle" process that's simply an infinite loop.
-  if (QueueEmpty (&runQueue)) {
-    printf ("No runnable processes - exiting!\n");
-    exitsim (); // NEVER RETURNS
+  /*  if (QueueEmpty (&runQueue)) {
+      printf ("No runnable processes - exiting!\n");
+      exitsim (); // NEVER RETURNS
+      }*/
+  dbprintf('p', "Entering ProcessSchedule [context switch] with current PCB: %p\n",currentPCB);
+
+  currentPCB->p_quanta++;	// do this here or later?
+  currentPCB->estcpu++;	// do this here or later?
+
+  pcb = ProcessNext();
+
+  dbprintf('p', "PCB (%p) currentPCB (%p)\n",pcb,currentPCB);
+
+  l = &(pcb->l);
+
+  while (l != NULL) {
+    dbprintf('p', "\tLink: %p\n",l->object);
+    l = l->next; 
   }
 
-  pcb->p_quanta++;	// do this here or later?
-  pcb->estcpu++;	// do this here or later?
+  if (pcb == currentPCB) {
+    QueueRemove (&pcb->l);
+    QueueInsertLast (&runQueue, &pcb->l);
 
-  if(pcb->p_quanta > PROCESS_QUANTA_MAX) {
-    pcb->prio = PUSER + (pcb->estcpu/4) + (2*pcb->p_nice);
-    if(pcb->runQueueNum == pcb->prio/4) {
-      // TODO: Don't change run queue; just place at tail
+    if((currentPCB->p_quanta % PROCESS_QUANTA_MAX) > PROCESS_QUANTA_MAX) {
+      dbprintf('p', "Recalculating priority of currentPCB\n");
+      currentPCB->prio = PUSER + (currentPCB->estcpu/4) + (2*currentPCB->p_nice);
+      if(currentPCB->runQueueNum == currentPCB->prio/4) {
+        // Don't change run queue; just place at tail
+        LinkMoveToLast(&currentPCB->l);
+      } else {
+        // Change run queue and place at tail
+        currentPCB->runQueueNum = currentPCB->prio/4;
+        QueueRemove(&currentPCB->l);
+        QueueInsertLast(&runQueue[currentPCB->runQueueNum], &currentPCB->l);
+      }
     }
-    else {
-      // TODO: Change run queue and place at tail
-      pcb->runQueueNum = pcb->prio/4;
+
+    if(currentPCB->p_quanta > TOTAL_QUANTA_MAX) {
+      // dbprintf('p', "Process quanta exceeded max\n");
+      // Store all the tails of all of the RunQueues
+      Link  *links[32];
+      for(i = 0; i < 32; i++) {
+        links[i] = QueueLast(&runQueue[i]);
+      }
+
+      for(i = 0; i < 32; i++) {
+        // Casual TODO: EmptyQueue()?
+        if(links[i] == NULL) atEndOfQueue = TRUE;   // Empty queue
+
+        while(!atEndOfQueue) {
+          pcb = (PCB *)((QueueFirst(&runQueue[i]))->object);
+          pcb->estcpu = (((2 * pcb->load)/(2 * pcb->load + 1)) * pcb->estcpu) + pcb->p_nice;  // Decay the estimated CPU time of all processes
+          pcb->prio = PUSER + (pcb->estcpu/4) + (2 * pcb->p_nice);                            // Recalculate the priority of all processes
+
+          dbprintf('p', "At link: %p for last link: %p\n",&pcb->l,links[i]);
+          if(links[i] == &pcb->l || (&pcb->l)->next == NULL) atEndOfQueue = TRUE;
+
+          if (pcb->runQueueNum == pcb->prio/4) {
+            LinkMoveToLast(&pcb->l);
+          } else {
+            pcb->runQueueNum = pcb->prio/4;
+            QueueRemove(&pcb->l);
+            QueueInsertLast(&runQueue[pcb->runQueueNum], &pcb->l);
+          }
+        }
+      }
+
+      currentPCB->p_quanta = 0;
     }
   }
-    
-  if(pcb->p_quanta > TOTAL_QUANTA_MAX) {
-    // TODO: Decay the estimated CPU time of all processes: estcpu = (2*load)/(2*load + 1) * estcpu + p_nice
-    // TODO: Recalculate the priority of all processes: Prio = PUSER + (estcpu/4) + 2* p_nice
-    // TODO: Reorder the queues
-  }
+
+  currentPCB = ProcessNext();
 
   // Move the front of the queue to the end, if it is the running process.
   /*
-  pcb = (PCB *)((QueueFirst (&runQueue))->object);
-  if (pcb == currentPCB)
-  {
-    QueueRemove (&pcb->l);
-    QueueInsertLast (&runQueue, &pcb->l);
-  }
+     pcb = (PCB *)((QueueFirst (&runQueue))->object);
+     if (pcb == currentPCB)
+     {
+     QueueRemove (&pcb->l);
+     QueueInsertLast (&runQueue, &pcb->l);
+     }
 
   // Now, run the one at the head of the queue.
   pcb = (PCB *)((QueueFirst (&runQueue))->object);
   currentPCB = pcb;
   dbprintf ('p',"About to switch to PCB 0x%x,flags=0x%x @ 0x%x\n",
-            pcb, pcb->flags,
-            pcb->sysStackPtr[PROCESS_STACK_IAR]);
-  */
+  pcb, pcb->flags,
+  pcb->sysStackPtr[PROCESS_STACK_IAR]);
+   */
 
   // Clean up zombie processes here.  This is done at interrupt time
   // because it can't be done while the process might still be running
@@ -262,14 +336,14 @@ ProcessSchedule ()
 //	should be immediately followed by ProcessSchedule().
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessSuspend (PCB *suspend)
 {
 
   // Make sure it's already a runnable process.
   dbprintf ('p', "Suspending PCB 0x%x (%s).\n", suspend, suspend->name);
   ASSERT (suspend->flags & PROCESS_STATUS_RUNNABLE,
-	  "Trying to suspend a non-running process!\n");
+      "Trying to suspend a non-running process!\n");
   ProcessSetStatus (suspend, PROCESS_STATUS_WAITING);
   QueueRemove (&suspend->l);
   QueueInsertLast (&waitQueue, &suspend->l);
@@ -288,13 +362,13 @@ ProcessSuspend (PCB *suspend)
 //	the currently running process is unaffected.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessWakeup (PCB *wakeup)
 {
   dbprintf ('p',"Waking up PCB 0x%x.\n", wakeup);
   // Make sure it's not yet a runnable process.
   ASSERT (wakeup->flags & PROCESS_STATUS_WAITING,
-          "Trying to wake up a non-sleeping process!\n");
+      "Trying to wake up a non-sleeping process!\n");
   ProcessSetStatus (wakeup, PROCESS_STATUS_RUNNABLE);
   QueueRemove (&wakeup->l);
   QueueInsertLast (&runQueue, &wakeup->l);
@@ -316,7 +390,7 @@ ProcessWakeup (PCB *wakeup)
 //	the process can continue running.
 //
 //----------------------------------------------------------------------
-void
+  void
 ProcessDestroy (PCB *pcb)
 {
   dbprintf('p', "Entering ProcessDestroy for 0x%x.\n", pcb);
@@ -335,7 +409,7 @@ ProcessDestroy (PCB *pcb)
 //
 //----------------------------------------------------------------------
 static
-void
+  void
 ProcessExit ()
 {
   exit ();
@@ -384,7 +458,7 @@ uint32 get_argument(char *string)
 //	for user processes.
 //
 //----------------------------------------------------------------------
-int
+  int
 ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int isUser)
 {
   int		i, j, fd, n;
@@ -403,7 +477,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   intrs = DisableIntrs ();
   dbprintf ('I', "Old interrupt value was 0x%x.\n", intrs);
   dbprintf ('p', "Entering ProcessFork args=0x%x 0x%x %s %d\n", func,
-	    param, name, isUser);
+      param, name, isUser);
   // Get a free PCB for the new process
   if (QueueEmpty (&freepcbs)) {
     printf ("FATAL error: no free processes!\n");
@@ -452,7 +526,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   // Lab3: initialized pcb member for your scheduling algorithm here
   // BEGIN BRIAN CODE
   if((isUser && p_nice < 0) || p_nice > 19) {  // p_nice should never be greater than 19
-     pcb->p_nice = 0;
+    pcb->p_nice = 0;
   }
   else pcb->p_nice = p_nice;
   pcb->estcpu		= 0;
@@ -462,7 +536,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   pcb->runQueueNum	= (pcb->prio)/4;
   pcb->load		= 1;
   pcb->p_info		= p_info;
-  pbc->p_quanta		= 0;
+  pcb->p_quanta		= 0;
   // END BRIAN CODE
   //--------------------------------------
 
@@ -480,9 +554,9 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   pcb->currentSavedFrame = stackframe;
 
   dbprintf ('p',
-	    "Setting up PCB @ 0x%x (sys stack=0x%x, mem=0x%x, size=0x%x)\n",
-	    pcb, pcb->sysStackArea, pcb->pagetable[0],
-	    pcb->npages * MEMORY_PAGE_SIZE);
+      "Setting up PCB @ 0x%x (sys stack=0x%x, mem=0x%x, size=0x%x)\n",
+      pcb, pcb->sysStackArea, pcb->pagetable[0],
+      pcb->npages * MEMORY_PAGE_SIZE);
 
   //----------------------------------------------------------------------
   // This section sets up the stack frame for the process.  This is done
@@ -510,22 +584,23 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   // This can be changed on a per-process basis if desired.  For now,
   // though, it's fixed.
   stackframe[PROCESS_STACK_PTBITS] = (MEMORY_L1_PAGE_SIZE_BITS
-					  + (MEMORY_L2_PAGE_SIZE_BITS << 16));
+      + (MEMORY_L2_PAGE_SIZE_BITS << 16));
 
 
   if (isUser) {
     dbprintf ('p', "About to load %s\n", name);
     fd = ProcessGetCodeInfo (name, &start, &codeS, &codeL, &dataS, &dataL);
     if (fd < 0) {
+      dbprintf('p', "Could not get code info for: %s (%i)\n",name,fd);
       // Free newpage and pcb so we don't run out...
       ProcessFreeResources (pcb);
       return (-1);
     }
     dbprintf ('p', "File %s -> start=0x%08x\n", name, start);
     dbprintf ('p', "File %s -> code @ 0x%08x (size=0x%08x)\n", name, codeS,
-	      codeL);
+        codeL);
     dbprintf ('p', "File %s -> data @ 0x%08x (size=0x%08x)\n", name, dataS,
-	      dataL);
+        dataL);
     while ((n = ProcessGetFromFile (fd, buf, &addr, sizeof (buf))) > 0) {
       dbprintf ('p', "Placing %d bytes at vaddr %08x.\n", n, addr - n);
       // Copy the data to user memory.  Note that the user memory needs to
@@ -542,8 +617,8 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
     // Copy the initial parameter to the top of stack
 
     MemoryCopySystemToUser (pcb, (char *)str,
-			    (char *)stackframe[PROCESS_STACK_IREG+29],
-			    SIZE_ARG_BUFF-32);
+        (char *)stackframe[PROCESS_STACK_IREG+29],
+        SIZE_ARG_BUFF-32);
 
     offset = get_argument((char *)param);
 
@@ -560,8 +635,8 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
     dum[0] = count-2;
     dum[1] = MEMORY_PAGE_SIZE - SIZE_ARG_BUFF - (count-2)*4;
     MemoryCopySystemToUser (pcb, (char *)dum,
-			    (char *)(stackframe[PROCESS_STACK_IREG+29]-count*4),
-			    (count)*sizeof(uint32));
+        (char *)(stackframe[PROCESS_STACK_IREG+29]-count*4),
+        (count)*sizeof(uint32));
     stackframe[PROCESS_STACK_IREG+29] -= 4*count;
     // Set the correct address at which to execute a user process.
     stackframe[PROCESS_STACK_IAR] = (uint32)start;
@@ -597,7 +672,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   // If this is the first process, make it the current one
   if (currentPCB == NULL) {
     dbprintf ('p', "Setting currentPCB=0x%x, stackframe=0x%x\n",
-	      pcb, pcb->currentSavedFrame);
+        pcb, pcb->currentSavedFrame);
     currentPCB = pcb;
   }
   dbprintf ('p', "Leaving ProcessFork (%s)\n", name);
@@ -615,7 +690,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
 //----------------------------------------------------------------------
 static
 inline
-int
+  int
 getxvalue (int x)
 {
   if ((x >= '0') && (x <= '9')) {
@@ -638,10 +713,10 @@ getxvalue (int x)
 //	(presumably by the caller) at some point.
 //
 //----------------------------------------------------------------------
-int
+  int
 ProcessGetCodeInfo (const char *file, uint32 *startAddr,
-		    uint32 *codeStart, uint32 *codeSize,
-		     uint32 *dataStart, uint32 *dataSize)
+    uint32 *codeStart, uint32 *codeSize,
+    uint32 *dataStart, uint32 *dataSize)
 {
   int		fd;
   int		totalsize;
@@ -652,13 +727,13 @@ ProcessGetCodeInfo (const char *file, uint32 *startAddr,
   // didn't work.
   if ((fd = FsOpen (file, FS_MODE_READ)) < 0) {
     dbprintf ('f', "ProcessGetCodeInfo: open of %s failed (%d).\n",
-	      file, fd);
+        file, fd);
     return (-1);
   }
   dbprintf ('f', "File descriptor is now %d.\n", fd);
   if ((totalsize = FsRead (fd, buf, sizeof (buf))) != sizeof (buf)) {
     dbprintf ('f', "ProcessGetCodeInfo: read got %d (not %d) bytes from %s\n",
-	      totalsize, sizeof (buf), file);
+        totalsize, sizeof (buf), file);
     FsClose (fd);
     return (-1);
   }
@@ -707,7 +782,7 @@ ProcessGetCodeInfo (const char *file, uint32 *startAddr,
 //	follows that from the previous line of the file.
 //
 //----------------------------------------------------------------------
-int
+  int
 ProcessGetFromFile (int fd, unsigned char *buf, uint32 *addr, int max)
 {
   char	localbuf[204];
@@ -750,7 +825,7 @@ ProcessGetFromFile (int fd, unsigned char *buf, uint32 *addr, int max)
       // If we're going to go to a new address, we break out of the
       // loop and return what we've got already.
       if (nbytes > 0) {
-	break;
+        break;
       }
       *addr = dstrtol (lpos, &lpos, 16);
       dbprintf ('f', "New address is 0x%x.\n", *addr);
@@ -761,14 +836,14 @@ ProcessGetFromFile (int fd, unsigned char *buf, uint32 *addr, int max)
     lpos++;	// skip past colon
     while (1) {
       while (((*lpos) == ' ') || (*lpos == '\t')) {
-	lpos++;
+        lpos++;
       }
       if (*lpos == '\n') {
-	lpos++;
-	break;
+        lpos++;
+        break;
       } else if (!(isxdigit (*lpos) && isxdigit (*(lpos+1)))) {
-     // Exit loop if at least one digit isn't a hex digit.
-	break;
+        // Exit loop if at least one digit isn't a hex digit.
+        break;
       }
       pos[nbytes++] = (getxvalue(*lpos) * 16) + getxvalue(*(lpos+1));
       lpos += 2;
@@ -778,7 +853,7 @@ ProcessGetFromFile (int fd, unsigned char *buf, uint32 *addr, int max)
   // Seek to just past the last line we read.
   FsSeek (fd, seekpos + lpos - localbuf, FS_SEEK_SET);
   dbprintf ('f', "Seeking to %d and returning %d bytes!\n",
-	    seekpos + lpos - localbuf, nbytes);
+      seekpos + lpos - localbuf, nbytes);
   return (nbytes);
 }
 
@@ -806,20 +881,20 @@ main (int argc, char *argv[])
   uint32	addr;
   extern void	SysprocCreateProcesses ();
   char *param[12]={NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-  	 	   NULL, NULL, NULL, NULL};
+    NULL, NULL, NULL, NULL};
   int base;
 
-//  debugstr[0] = 'p';
+  //  debugstr[0] = 'p';
   debugstr[4] = '\0';
   MyFuncRetZero();
   printf ("Got %d arguments.\n", argc);
   printf ("Available memory: 0x%x -> 0x%x.\n", lastosaddress,
-	  MemoryGetSize ());
+      MemoryGetSize ());
   printf ("Argument count is %d.\n", argc);
   for (i = 0; i < argc; i++) {
     printf ("Argument %d is %s.\n", i, argv[i]);
   }
-//  *((int *)0xfff00100) = 't';
+  //  *((int *)0xfff00100) = 't';
   FsModuleInit ();
   for (i = 0; i < argc; i++)
   {
@@ -827,44 +902,44 @@ main (int argc, char *argv[])
     {
       switch (argv[i][1])
       {
-      case 'D':
-	dstrcpy (debugstr, argv[++i]);
-	break;
-      case 'i':
-	n = dstrtol (argv[++i], (void *)0, 0);
-	ditoa (n, buf);
-	printf ("Converted %s to %d=%s\n", argv[i], n, buf);
-	break;
-      case 'f':
-      {
-	int	start, codeS, codeL, dataS, dataL, fd, j;
-	int	addr = 0;
-	static unsigned char buf[200];
-	fd = ProcessGetCodeInfo (argv[++i], &start, &codeS, &codeL, &dataS,
-				 &dataL);
-	printf ("File %s -> start=0x%08x\n", argv[i], start);
-	printf ("File %s -> code @ 0x%08x (size=0x%08x)\n", argv[i], codeS,
-		codeL);
-	printf ("File %s -> data @ 0x%08x (size=0x%08x)\n", argv[i], dataS,
-		dataL);
-	while ((n = ProcessGetFromFile (fd, buf, &addr, sizeof (buf))) > 0)
-	{
-	  for (j = 0; j < n; j += 4)
-	  {
-	    printf ("%08x: %02x%02x%02x%02x\n", addr + j - n, buf[j], buf[j+1],
-		    buf[j+2], buf[j+3]);
-	  }
-	}
-	close (fd);
-	break;
-      }
-      case 'u':
-	userprog = argv[++i];
-        base = i;
-	break;
-      default:
-	printf ("Option %s not recognized.\n", argv[i]);
-	break;
+        case 'D':
+          dstrcpy (debugstr, argv[++i]);
+          break;
+        case 'i':
+          n = dstrtol (argv[++i], (void *)0, 0);
+          ditoa (n, buf);
+          printf ("Converted %s to %d=%s\n", argv[i], n, buf);
+          break;
+        case 'f':
+          {
+            int	start, codeS, codeL, dataS, dataL, fd, j;
+            int	addr = 0;
+            static unsigned char buf[200];
+            fd = ProcessGetCodeInfo (argv[++i], &start, &codeS, &codeL, &dataS,
+                &dataL);
+            printf ("File %s -> start=0x%08x\n", argv[i], start);
+            printf ("File %s -> code @ 0x%08x (size=0x%08x)\n", argv[i], codeS,
+                codeL);
+            printf ("File %s -> data @ 0x%08x (size=0x%08x)\n", argv[i], dataS,
+                dataL);
+            while ((n = ProcessGetFromFile (fd, buf, &addr, sizeof (buf))) > 0)
+            {
+              for (j = 0; j < n; j += 4)
+              {
+                printf ("%08x: %02x%02x%02x%02x\n", addr + j - n, buf[j], buf[j+1],
+                    buf[j+2], buf[j+3]);
+              }
+            }
+            close (fd);
+            break;
+          }
+        case 'u':
+          userprog = argv[++i];
+          base = i;
+          break;
+        default:
+          printf ("Option %s not recognized.\n", argv[i]);
+          break;
       }
       if(userprog)
         break;
@@ -893,21 +968,21 @@ main (int argc, char *argv[])
   FsWrite (i, buf, 80);
   FsClose (i);
   if (userprog != (char *)0) {
-      for(i=base;i<argc&&i-base<11; i++)
-      {
-        param[i-base] = argv[i];
-      }
-      process_create(0,0,param[0], param[1], param[2], param[3], param[4],
-      		     param[5], param[6], param[7], param[8], param[9],
-		     param[10], param[11]);
-//    ProcessFork (0, (uint32)"Help Me man!", userprog, 1);
+    for(i=base;i<argc&&i-base<11; i++)
+    {
+      param[i-base] = argv[i];
+    }
+    process_create(0,0,param[0], param[1], param[2], param[3], param[4],
+        param[5], param[6], param[7], param[8], param[9],
+        param[10], param[11]);
+    //    ProcessFork (0, (uint32)"Help Me man!", userprog, 1);
   }
 
   SysprocCreateProcesses ();
   dbprintf ('i', "Created processes - about to set timer quantum.\n");
   TimerSet (processQuantum);
   dbprintf ('i', "Set timer quantum to %d, about to run first process.\n",
-	    processQuantum);
+      processQuantum);
   intrreturn ();
   // Should never be called because the scheduler exits when there
   // are no runnable processes left.
