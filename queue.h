@@ -121,6 +121,21 @@ QueueEmpty (Queue *q)
     return (QueueLength (q) == 0);
 }
 
+inline
+void
+LinkRemove(Link *l) {
+    QueueRemove(l);
+}
+
+inline
+void
+LinkMoveToLast(Link *l) {
+    Queue *q = l->queue
+    QueueRemove(l);
+    
+    QueueInsertLast(q, l);
+}
+
 extern void	QueueModuleInit ();
 extern void	QueueFreeLink (Link *l);
 extern Link	*QueueAllocLink ();
