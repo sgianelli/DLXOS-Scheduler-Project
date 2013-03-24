@@ -25,6 +25,9 @@ float MyFuncRetZero();
 #define TIMESTRING2  " %.3f s\n"
 #define TIMESTRING3  "Process %d 's priority is %d \n"
 
+#define TOTAL_QUANTA_MAX 10
+#define PROCESS_QUANTA_MAX 4
+
 // Pointer to the current PCB.  This is used by the assembly language
 // routines for context switches.
 PCB		*currentPCB;
@@ -56,6 +59,10 @@ static processQuantum = DLX_PROCESS_QUANTUM;
 
 // String listing debugging options to print out.
 char	debugstr[200];
+
+// BEGIN BRIAN CODE
+static int totalQuanta = 0;
+// END BRIAN CODE
 
 
 //----------------------------------------------------------------------
@@ -194,8 +201,28 @@ ProcessSchedule ()
     exitsim (); // NEVER RETURNS
   }
 
-  // Move the front of the queue to the end, if it is the running process.
+  pcb->p_quanta++;	// do this here or later?
+  pcb->estcpu++;	// do this here or later?
 
+  if(pcb->p_quanta > PROCESS_QUANTA_MAX) {
+    pcb->prio = PUSER + (pcb->estcpu/4) + (2*pcb->p_nice);
+    if(pcb->runQueueNum == pcb->prio/4) {
+      // TODO: Don't change run queue; just place at tail
+    }
+    else {
+      // TODO: Change run queue and place at tail
+      pcb->runQueueNum = pcb->prio/4;
+    }
+  }
+    
+  if(pcb->p_quanta > TOTAL_QUANTA_MAX) {
+    // TODO: Decay the estimated CPU time of all processes: estcpu = (2*load)/(2*load + 1) * estcpu + p_nice
+    // TODO: Recalculate the priority of all processes: Prio = PUSER + (estcpu/4) + 2* p_nice
+    // TODO: Reorder the queues
+  }
+
+  // Move the front of the queue to the end, if it is the running process.
+  /*
   pcb = (PCB *)((QueueFirst (&runQueue))->object);
   if (pcb == currentPCB)
   {
@@ -209,6 +236,7 @@ ProcessSchedule ()
   dbprintf ('p',"About to switch to PCB 0x%x,flags=0x%x @ 0x%x\n",
             pcb, pcb->flags,
             pcb->sysStackPtr[PROCESS_STACK_IAR]);
+  */
 
   // Clean up zombie processes here.  This is done at interrupt time
   // because it can't be done while the process might still be running
@@ -434,6 +462,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
   pcb->runQueueNum	= (pcb->prio)/4;
   pcb->load		= 1;
   pcb->p_info		= p_info;
+  pbc->p_quanta		= 0;
   // END BRIAN CODE
   //--------------------------------------
 
