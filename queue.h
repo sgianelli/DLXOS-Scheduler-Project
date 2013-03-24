@@ -123,14 +123,8 @@ QueueEmpty (Queue *q)
 
 inline
 void
-LinkRemove(Link *l) {
-    QueueRemove(l);
-}
-
-inline
-void
 LinkMoveToLast(Link *l) {
-    Queue *q = l->queue
+    Queue *q = l->queue;
     QueueRemove(l);
     
     QueueInsertLast(q, l);
