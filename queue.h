@@ -68,24 +68,56 @@ QueueLast (Queue *q)
   return (q->last);
 }
 
+inline
+  void
+QueuePrint(Queue *q) {
+  Link *l = q->first;
+
+  while (l != NULL) {
+    dbprintf('p', "\tLink: %p\n",l->object);
+    l = l->next; 
+  }
+
+  dbprintf('p', "Done printing links of (%p)\n",q);
+}
 
 inline
   void
 QueueInsertAfter (Queue *q, Link *after, Link *l)
 {
+  dbprintf('p', "Inserting link (%p) after (%p)\n",l->object,after);
   l->queue = q;
-  l->prev = after;
-  l->next = after->next;
-  after->next = l;
-  l->next->prev = l;
+
+  if (after) {
+    l->prev = after;
+    l->next = after->next;
+    after->next = l;
+    l->next->prev = l;
+
+    if (q->last == after) {
+      q->last = after->next;
+      q->last = NULL;
+    }
+  } else if (q->nitems > 0) {
+    q->first->prev = l;
+    l->next = q->first;
+    q->first = l;
+    q->first->prev = NULL;
+  } else {
+    q->first = l;
+  }
+
   q->nitems += 1;
+
+  if (l->object)
+    QueuePrint(q);
 }
 
 inline
   void
 QueueInsertFirst (Queue *q, Link *l)
 {
-  QueueInsertAfter (q, (Link *)q, l);
+  QueueInsertAfter (q, NULL, l);
 }
 
 inline
@@ -99,11 +131,22 @@ inline
   void
 QueueRemove (Link *l)
 {
-  if (l->queue->nitems > 0) {
-    l->prev->next = l->next;
-    l->next->prev = l->prev;
+  Queue *q = l->queue;
+
+  if (q->nitems > 0) {
+    if (q->first == l)
+      q->first = q->first->next;
+    else if (q->last == l)
+      q->last = q->last->prev;
+    else {
+      l->prev->next = l->next;
+      l->next->prev = l->prev;
+    }
+
     l->queue->nitems -= 1;
   }
+
+  l->prev = NULL;
   l->next = NULL;
 }
 

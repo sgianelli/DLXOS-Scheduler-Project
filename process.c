@@ -236,10 +236,7 @@ ProcessSchedule ()
 
   l = &(pcb->l);
 
-  while (l != NULL) {
-    dbprintf('p', "\tLink: %p\n",l->object);
-    l = l->next; 
-  }
+  QueuePrint(l->queue);
 
   if (pcb == currentPCB) {
     QueueRemove (&pcb->l);
@@ -666,6 +663,7 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
 
   // Place the PCB onto the run queue.
   intrs = DisableIntrs ();
+  dbprintf('p', "Inserting last (%p, %p)\n",l,l->object);
   QueueInsertLast (&runQueue[PUSER/4], l);
   RestoreIntrs (intrs);
 

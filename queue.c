@@ -27,8 +27,8 @@ QueueModuleInit ()
 void
 QueueInit (Queue *q)
 {
-    q->first = (Link *)q;
-    q->last = (Link *)q;
+    q->first = NULL;
+    q->last = NULL;
     q->nitems = 0;
 }
 
