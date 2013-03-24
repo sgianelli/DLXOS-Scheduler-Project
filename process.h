@@ -56,6 +56,7 @@ typedef struct PCB {
   int		runQueueNum;
   int		load;
   int		p_info;
+  int		p_quanta;
   // END BRIAN CODE
 } PCB;
 
