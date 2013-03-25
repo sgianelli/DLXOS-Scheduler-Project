@@ -51,7 +51,7 @@ typedef struct PCB {
   int	          	p_nice;
   unsigned long		estcpu; // Time (in micros) 
   int	          	runtime;
-  unsigned long  	sleeptime; // Time asleep (in micros)
+  uint32 sleeptime; // Time asleep (in micros)
   int	           	prio;
   int	          	runQueueNum;
   int	          	load;
@@ -59,6 +59,8 @@ typedef struct PCB {
   int	          	p_quanta; // Number of quanta the PCB has run in total
   // END BRIAN CODE
 } PCB;
+
+uint32 my_timer_get();
 
 // Offsets of various registers from the stack pointer in the register
 // save frame.  Offsets are in WORDS (4 byte chunks)

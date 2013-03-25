@@ -64,9 +64,12 @@ static processQuantum = DLX_PROCESS_QUANTUM;
 char	debugstr[200];
 
 // BEGIN BRIAN CODE
-static int totalQuanta = 0;
+static uint32 totalQuanta = 0;
 // END BRIAN CODE
 
+uint32 my_timer_get() {
+  return totalQuanta * 100 + totalQuanta;
+}
 
 //----------------------------------------------------------------------
 //
@@ -166,21 +169,20 @@ ProcessSetResult (PCB * pcb, uint32 result)
 
 //----------------------------------------------------------------------
 //
-//  ProcessNext
+//  ProcessHighestPriority
 //
 //  Grabs the next process that should be run
 //
 //----------------------------------------------------------------------
 
 PCB *
-ProcessNext() {
+ProcessHighestPriority() {
   PCB *ret = NULL;
   int i;
 
   for (i = 0; i < 32; i++) {
     if ((&runQueue[i])->nitems != 0) {
       dbprintf('p', "Found process to run in queue [%i]\n",i);
-      QueuePrint(&runQueue[i]);
       ret = (PCB *)(QueueFirst(&runQueue[i])->object);
       break;
     }
@@ -216,8 +218,8 @@ ProcessNext() {
 ProcessSchedule ()
 {
   PCB           *pcb;
-  int           i;
-  int           atEndOfQueue; // To be used as a boolean value
+  int           i, j, n;
+  int           atEndOfQueue = FALSE; // To be used as a boolean value
   Link          *links[32];
 
   // The OS exits if there's no runnable process.  This is a feature, not a
@@ -232,73 +234,70 @@ ProcessSchedule ()
   currentPCB->p_quanta++;	// do this here or later?
   currentPCB->estcpu++;	// do this here or later?
 
-  pcb = ProcessNext();
+  totalQuanta++;
+
+  pcb = ProcessHighestPriority();
 
   dbprintf('p', "PCB (%p) currentPCB (%p)\n",pcb,currentPCB);
 
-  QueuePrint((&pcb->l)->queue);
 
+  // If last run process is still the highest priority (ie. not asleep/a zombie)
   if (pcb == currentPCB) {
     QueueRemove (&pcb->l);
     QueueInsertLast (&runQueue[pcb->runQueueNum], &pcb->l);
 
-    dbprintf('p', "Process quanta: %i\n",currentPCB->p_quanta);
-    if((currentPCB->p_quanta % PROCESS_QUANTA_MAX) == 0 ) {//> PROCESS_QUANTA_MAX) {
+    dbprintf('p', "\tProcess quanta: %i estcpu: %i\n",currentPCB->p_quanta,currentPCB->estcpu);
+    if((currentPCB->p_quanta % PROCESS_QUANTA_MAX) == 0) {
       dbprintf('p', "Recalculating priority of currentPCB\n");
       currentPCB->prio = PUSER + (currentPCB->estcpu/4) + (2*currentPCB->p_nice);
       dbprintf('p', "run queue: %i new run queue: %i prio: %i\n",currentPCB->runQueueNum,currentPCB->prio/4,currentPCB->prio);
-      if(currentPCB->runQueueNum == currentPCB->prio/4) {
-        // Don't change run queue; just place at tail
-        LinkMoveToLast(&currentPCB->l);
-      } else {
-        // Change run queue and place at tail
-        currentPCB->runQueueNum = currentPCB->prio/4;
-        QueueRemove(&currentPCB->l);
-        QueueInsertLast(&runQueue[currentPCB->runQueueNum], &currentPCB->l);
-      }
+
+      currentPCB->runQueueNum = currentPCB->prio/4;
+      QueueRemove(&currentPCB->l);
+      QueueInsertLast(&runQueue[currentPCB->runQueueNum], &currentPCB->l);
+
       dbprintf('p', "Recalculated priority\n");
-    }
-
-    if(totalQuanta > TOTAL_QUANTA_MAX) {
-      dbprintf('p', "Full reshuffle\n");
-      // dbprintf('p', "Process quanta exceeded max\n");
-      // Store all the tails of all of the RunQueues
-      for(i = 0; i < 32; i++) {
-        links[i] = QueueLast(&runQueue[i]);
-      }
-      dbprintf('p', "Last links registered\n");
-
-      for(i = 0; i < 32; i++) {
-        // Casual TODO: EmptyQueue()?
-        if(links[i] == NULL) atEndOfQueue = TRUE;   // Empty queue
-
-        while(!atEndOfQueue) {
-          pcb = (PCB *)((QueueFirst(&runQueue[i]))->object);
-          pcb->estcpu = (((2 * pcb->load)/(2 * pcb->load + 1)) * pcb->estcpu) + pcb->p_nice;  // Decay the estimated CPU time of all processes
-          pcb->prio = PUSER + (pcb->estcpu/4) + (2 * pcb->p_nice);                            // Recalculate the priority of all processes
-
-          dbprintf('p', "At link: %p for last link: %p\n",&pcb->l,links[i]);
-          if(links[i] == &pcb->l || (&pcb->l)->next == NULL) atEndOfQueue = TRUE;
-
-          if (pcb->runQueueNum == pcb->prio/4) {
-            LinkMoveToLast(&pcb->l);
-          } else {
-            pcb->runQueueNum = pcb->prio/4;
-            QueueRemove(&pcb->l);
-            QueueInsertLast(&runQueue[pcb->runQueueNum], &pcb->l);
-          }
-        }
-      }
-
-      totalQuanta = 0;
-      currentPCB->p_quanta = 0;
     }
   }
 
-  currentPCB = ProcessNext();
+  if(totalQuanta % TOTAL_QUANTA_MAX == 0) {
+    dbprintf('p', "Full reshuffle\n");
+    // dbprintf('p', "Process quanta exceeded max\n");
+    // Store all the tails of all of the RunQueues
+    for(i = 0; i < 32; i++) {
+      links[i] = QueueLast(&runQueue[i]);
+    }
+    dbprintf('p', "Last links registered\n");
 
-  QueuePrint((&pcb->l)->queue);
+    for(i = 0; i < 32; i++) {
+//        if(QueueEmpty(&runQueue[i])) atEndOfQueue = TRUE;
+      n = (&runQueue[i])->nitems;
 
+//        while(!atEndOfQueue) {
+      for (j = 0; j < n; j++) {
+        pcb = (PCB *)((QueueFirst(&runQueue[i]))->object);
+        pcb->estcpu = (int)((((float)2 * pcb->load)/((float)2 * pcb->load + 1)) * pcb->estcpu) + pcb->p_nice;  // Decay the estimated CPU time of all processes
+        pcb->prio = PUSER + (pcb->estcpu/4) + (2 * pcb->p_nice);                            // Recalculate the priority of all processes
+        dbprintf('p', "\tRun queue shift (%p->%d)\n",pcb,pcb->prio);
+
+        dbprintf('p', "At link: %p for last link: %p\n",&pcb->l,links[i]);
+        if(links[i] == &pcb->l || (&pcb->l)->next == NULL) atEndOfQueue = TRUE;
+
+        pcb->runQueueNum = pcb->prio/4;
+        QueueRemove(&pcb->l);
+        QueueInsertLast(&runQueue[pcb->runQueueNum], &pcb->l);
+      }
+    }
+
+    pcb = ProcessHighestPriority();
+    if (currentPCB == pcb) {
+      QueueRemove(&currentPCB->l);
+      QueueInsertLast(&runQueue[currentPCB->runQueueNum], &currentPCB->l);
+    }
+  }
+  //}
+
+  currentPCB = ProcessHighestPriority();
 
   // Move the front of the queue to the end, if it is the running process.
   /*
@@ -346,13 +345,13 @@ ProcessSuspend (PCB *suspend)
 {
 
   // Make sure it's already a runnable process.
-  dbprintf ('p', "Suspending PCB 0x%x (%s).\n", suspend, suspend->name);
+  dbprintf ('p', "Suspending PCB 0x%x (%s) at %d.\n", suspend, suspend->name,my_timer_get());
+  suspend->sleeptime = my_timer_get();
   ASSERT (suspend->flags & PROCESS_STATUS_RUNNABLE,
       "Trying to suspend a non-running process!\n");
   ProcessSetStatus (suspend, PROCESS_STATUS_WAITING);
   QueueRemove (&suspend->l);
   QueueInsertLast (&waitQueue, &suspend->l);
-  QueuePrint(&waitQueue);
 }
 
 //----------------------------------------------------------------------
@@ -372,7 +371,6 @@ ProcessSuspend (PCB *suspend)
 ProcessWakeup (PCB *wakeup)
 {
   dbprintf ('p',"Waking up PCB 0x%x.\n", wakeup);
-  QueuePrint(&waitQueue);
   // Make sure it's not yet a runnable process.
   ASSERT (wakeup->flags & PROCESS_STATUS_WAITING,
       "Trying to wake up a non-sleeping process!\n");
