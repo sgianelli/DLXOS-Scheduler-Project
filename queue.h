@@ -72,31 +72,35 @@ inline
   void
 QueuePrint(Queue *q) {
   Link *l = q->first;
+  int i = 0;
 
+  dbprintf('q', "\tFirst: %p Last: %p\n",q->first,q->last);
   while (l != NULL) {
-    dbprintf('p', "\tLink: %p\n",l->object);
+    dbprintf('q', "\tLink: %p o(%p)\n",l,l->object);
     l = l->next; 
+    if (i++ == 10)
+        break;
   }
 
-  dbprintf('p', "Done printing links of (%p)\n",q);
+  dbprintf('q', "Done printing links of (%p)\n",q);
 }
 
 inline
   void
 QueueInsertAfter (Queue *q, Link *after, Link *l)
 {
-  dbprintf('p', "Inserting link (%p) after (%p)\n",l->object,after);
+  dbprintf('q', "Inserting link (%p) after (%p)\n",l->object,after);
   l->queue = q;
 
   if (after) {
     l->prev = after;
+    dbprintf('q', "After->%p\n",after->next);
     l->next = after->next;
     after->next = l;
     l->next->prev = l;
 
     if (q->last == after) {
       q->last = after->next;
-      q->last = NULL;
     }
   } else if (q->nitems > 0) {
     q->first->prev = l;
@@ -105,6 +109,9 @@ QueueInsertAfter (Queue *q, Link *after, Link *l)
     q->first->prev = NULL;
   } else {
     q->first = l;
+
+    if (!q->last)
+        q->last = q->first;
   }
 
   q->nitems += 1;
@@ -132,22 +139,31 @@ inline
 QueueRemove (Link *l)
 {
   Queue *q = l->queue;
+  dbprintf('q', "Removing entry (%p->%p)\n",l,l->object);
+  QueuePrint(q);
 
-  if (q->nitems > 0) {
+  if (q->nitems > 1) {
     if (q->first == l)
       q->first = q->first->next;
-    else if (q->last == l)
+    else if (q->last == l) {
       q->last = q->last->prev;
-    else {
+      q->last->next = NULL;
+    } else {
       l->prev->next = l->next;
       l->next->prev = l->prev;
     }
-
-    l->queue->nitems -= 1;
+  } else {
+    q->first = NULL;
+    q->last = NULL;
   }
+
+  q->nitems -= 1;
 
   l->prev = NULL;
   l->next = NULL;
+
+  dbprintf('q', "Removing entry (%p->%p)\n",l,l->object);
+  QueuePrint(q);
 }
 
 inline
