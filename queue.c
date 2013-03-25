@@ -20,8 +20,6 @@ QueueModuleInit ()
   for (i = 0; i < QUEUE_MAX_LINKS; i++) {
     dbprintf ('i', "Initializing queue link %d.\n", i);
     linkpool[i].next = NULL;
-    linkpool[i].prev = NULL;
-    linkpool[i].object = NULL;
     QueueFreeLink (&(linkpool[i]));
   }
 }
@@ -29,8 +27,8 @@ QueueModuleInit ()
 void
 QueueInit (Queue *q)
 {
-    q->first = NULL;
-    q->last = NULL;
+    q->first = (Link *)q;
+    q->last = (Link *)q;
     q->nitems = 0;
 }
 

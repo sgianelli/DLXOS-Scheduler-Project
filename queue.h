@@ -20,173 +20,105 @@
 #define	QUEUE_MAX_LINKS		400
 
 typedef struct Link {
-  struct Link	*next;
-  struct Link *prev;
-  struct Queue *queue;
-  void	*object;
+    struct Link	*next;
+    struct Link *prev;
+    struct Queue *queue;
+    void	*object;
 } Link;
 
 typedef struct Queue {
-  struct Link *first;
-  struct Link *last;
-  int		nitems;
+    struct Link *first;
+    struct Link *last;
+    int		nitems;
 } Queue;
 
 inline
-  void
+void
 QueueLinkInit (Link *l, void *obj)
 {
-  l->next = NULL;
-  l->object = obj;
+    l->next = NULL;
+    l->object = obj;
 }
 
 inline
-  Link *
+Link *
 QueueNext (Link *l)
 {
-  return (l->next);
+    return (l->next);
 }
 
 inline
-  Link *
+Link *
 QueuePrev (Link *l)
 {
-  return (l->prev);
+    return (l->prev);
 }
 
 inline
-  Link *
+Link *
 QueueFirst (Queue *q)
 {
-  return (q->first);
+    return (q->first);
 }
 
 inline
-  Link *
+Link *
 QueueLast (Queue *q)
 {
-  return (q->last);
+    return (q->last);
 }
 
-inline
-  void
-QueuePrint(Queue *q) {
-  Link *l = q->first;
-  int i = 0;
-
-  dbprintf('q', "\tFirst: %p Last: %p\n",q->first,q->last);
-  while (l != NULL) {
-    dbprintf('q', "\tLink: %p o(%p)\n",l,l->object);
-    l = l->next; 
-    if (i++ == 10)
-        break;
-  }
-
-  dbprintf('q', "Done printing links of (%p)\n",q);
-}
 
 inline
-  void
+void
 QueueInsertAfter (Queue *q, Link *after, Link *l)
 {
-  dbprintf('q', "Inserting link (%p) after (%p)\n",l->object,after);
-  l->queue = q;
-
-  if (after) {
+    l->queue = q;
     l->prev = after;
-    dbprintf('q', "After->%p\n",after->next);
     l->next = after->next;
     after->next = l;
     l->next->prev = l;
-
-    if (q->last == after) {
-      q->last = after->next;
-    }
-  } else if (q->nitems > 0) {
-    q->first->prev = l;
-    l->next = q->first;
-    q->first = l;
-    q->first->prev = NULL;
-  } else {
-    q->first = l;
-
-    if (!q->last)
-        q->last = q->first;
-  }
-
-  q->nitems += 1;
-
-  if (l->object)
-    QueuePrint(q);
-}
-
-inline
-  void
-QueueInsertFirst (Queue *q, Link *l)
-{
-  QueueInsertAfter (q, NULL, l);
-}
-
-inline
-  void
-QueueInsertLast (Queue *q, Link *l)
-{
-  QueueInsertAfter (q, QueueLast(q), l);
-}
-
-inline
-  void
-QueueRemove (Link *l)
-{
-  Queue *q = l->queue;
-  dbprintf('q', "Removing entry (%p->%p)\n",l,l->object);
-  QueuePrint(q);
-
-  if (q->nitems > 1) {
-    if (q->first == l)
-      q->first = q->first->next;
-    else if (q->last == l) {
-      q->last = q->last->prev;
-      q->last->next = NULL;
-    } else {
-      l->prev->next = l->next;
-      l->next->prev = l->prev;
-    }
-  } else {
-    q->first = NULL;
-    q->last = NULL;
-  }
-
-  q->nitems -= 1;
-
-  l->prev = NULL;
-  l->next = NULL;
-
-  dbprintf('q', "Removing entry (%p->%p)\n",l,l->object);
-  QueuePrint(q);
-}
-
-inline
-  int
-QueueLength (Queue *q)
-{
-  return (q->nitems);
-}
-
-inline
-  int
-QueueEmpty (Queue *q)
-{
-  return (QueueLength (q) == 0);
+    q->nitems += 1;
 }
 
 inline
 void
-LinkMoveToLast(Link *l) {
-  Queue *q = l->queue;
-  QueueRemove(l);
+QueueInsertFirst (Queue *q, Link *l)
+{
+    QueueInsertAfter (q, (Link *)q, l);
+}
 
-  QueueInsertLast(q, l);
+inline
+void
+QueueInsertLast (Queue *q, Link *l)
+{
+    QueueInsertAfter (q, QueueLast(q), l);
+}
+
+inline
+void
+QueueRemove (Link *l)
+{
+    if (l->queue->nitems > 0) {
+	l->prev->next = l->next;
+	l->next->prev = l->prev;
+	l->queue->nitems -= 1;
+    }
+    l->next = NULL;
+}
+
+inline
+int
+QueueLength (Queue *q)
+{
+    return (q->nitems);
+}
+
+inline
+int
+QueueEmpty (Queue *q)
+{
+    return (QueueLength (q) == 0);
 }
 
 extern void	QueueModuleInit ();
