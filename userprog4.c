@@ -17,7 +17,7 @@ main (int argc, char *argv[])
       for(i=0; i<number; i++)
       {
         ditoa(i, num_str);
-        process_create(i,1,"userprog5.dlx.obj", num_str,semaphore_str, 
+        process_create(i,1,"userprog4.dlx.obj", num_str,semaphore_str, 
   			NULL);
       }
       break;

@@ -50,8 +50,8 @@ typedef struct PCB {
   // BEGIN BRIAN CODE
   int	          	p_nice;
   unsigned long		estcpu; // Time (in micros) 
-  int	          	runtime;
-  uint32 sleeptime; // Time asleep (in micros)
+  uint32         	runtime;
+  uint32          sleeptime; // Time asleep (in micros)
   int	           	prio;
   int	          	runQueueNum;
   int	          	load;

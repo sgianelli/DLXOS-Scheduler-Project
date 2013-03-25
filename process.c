@@ -23,13 +23,13 @@ float MyFuncRetZero();
 
 #define TIMESTRING1  "Process %d has run for"
 #define TIMESTRING2  " %.3f s\n"
-#define TIMESTRING3  "Process %d 's priority is %d \n"
+#define TIMESTRING3  "Process %d 's priority is %d\n"
 
 #define TOTAL_QUANTA_MAX 10
 #define PROCESS_QUANTA_MAX 4
 
-#define FALSE 0
 #define TRUE 1
+#define FALSE 0
 
 // Pointer to the current PCB.  This is used by the assembly language
 // routines for context switches.
@@ -63,9 +63,8 @@ static processQuantum = DLX_PROCESS_QUANTUM;
 // String listing debugging options to print out.
 char	debugstr[200];
 
-// BEGIN BRIAN CODE
 static uint32 totalQuanta = 0;
-// END BRIAN CODE
+static uint32 startTime = 0;
 
 uint32 my_timer_get() {
   return totalQuanta * 100 + totalQuanta;
@@ -231,18 +230,34 @@ ProcessSchedule ()
       }*/
   dbprintf('p', "Entering ProcessSchedule [context switch] with current PCB: %p\n",currentPCB);
 
-  currentPCB->p_quanta++;	// do this here or later?
-  currentPCB->estcpu++;	// do this here or later?
+  currentPCB->p_quanta++;
 
   totalQuanta++;
 
   pcb = ProcessHighestPriority();
+
+  currentPCB->runtime += my_timer_get() - startTime;
+
+  if (currentPCB->p_info == 1) {
+    printf(TIMESTRING1, currentPCB - pcbs);
+    printf(TIMESTRING2, currentPCB->runtime / (float)1000);
+    printf(TIMESTRING3, currentPCB - pcbs, currentPCB->prio);
+  }
+
+  startTime = my_timer_get();
+
+  if (!pcb) {
+    printf ("No runnable processes - exiting!\n");
+    exitsim ();
+  }
 
   dbprintf('p', "PCB (%p) currentPCB (%p)\n",pcb,currentPCB);
 
 
   // If last run process is still the highest priority (ie. not asleep/a zombie)
   if (pcb == currentPCB) {
+    currentPCB->estcpu++;
+
     QueueRemove (&pcb->l);
     QueueInsertLast (&runQueue[pcb->runQueueNum], &pcb->l);
 
@@ -270,10 +285,10 @@ ProcessSchedule ()
     dbprintf('p', "Last links registered\n");
 
     for(i = 0; i < 32; i++) {
-//        if(QueueEmpty(&runQueue[i])) atEndOfQueue = TRUE;
+      //        if(QueueEmpty(&runQueue[i])) atEndOfQueue = TRUE;
       n = (&runQueue[i])->nitems;
 
-//        while(!atEndOfQueue) {
+      //        while(!atEndOfQueue) {
       for (j = 0; j < n; j++) {
         pcb = (PCB *)((QueueFirst(&runQueue[i]))->object);
         pcb->estcpu = (int)((((float)2 * pcb->load)/((float)2 * pcb->load + 1)) * pcb->estcpu) + pcb->p_nice;  // Decay the estimated CPU time of all processes
@@ -294,39 +309,45 @@ ProcessSchedule ()
       QueueRemove(&currentPCB->l);
       QueueInsertLast(&runQueue[currentPCB->runQueueNum], &currentPCB->l);
     }
-  }
-  //}
+    }
+    //}
 
-  currentPCB = ProcessHighestPriority();
+    pcb = ProcessHighestPriority();
 
-  // Move the front of the queue to the end, if it is the running process.
-  /*
-     pcb = (PCB *)((QueueFirst (&runQueue))->object);
-     if (pcb == currentPCB)
-     {
-     QueueRemove (&pcb->l);
-     QueueInsertLast (&runQueue, &pcb->l);
-     }
+    //  }
 
-  // Now, run the one at the head of the queue.
-  pcb = (PCB *)((QueueFirst (&runQueue))->object);
-  currentPCB = pcb;
-  dbprintf ('p',"About to switch to PCB 0x%x,flags=0x%x @ 0x%x\n",
-  pcb, pcb->flags,
-  pcb->sysStackPtr[PROCESS_STACK_IAR]);
-   */
+    currentPCB = pcb;
 
-  // Clean up zombie processes here.  This is done at interrupt time
-  // because it can't be done while the process might still be running
-  while (!QueueEmpty (&zombieQueue)) {
-    pcb = (PCB *)(QueueFirst (&zombieQueue)->object);
-    dbprintf ('p', "Freeing zombie PCB 0x%x.\n", pcb);
-    QueueRemove (&pcb->l);
-    ProcessFreeResources (pcb);
-  }
-  // Set the timer so this process gets at most a fixed quantum of time.
-  TimerSet (processQuantum);
-  dbprintf ('p', "Leaving ProcessSchedule (cur=0x%x)\n", currentPCB);
+    // currentPCB = ProcessHighestPriority();
+
+    // Move the front of the queue to the end, if it is the running process.
+    /*
+       pcb = (PCB *)((QueueFirst (&runQueue))->object);
+       if (pcb == currentPCB)
+       {
+       QueueRemove (&pcb->l);
+       QueueInsertLast (&runQueue, &pcb->l);
+       }
+
+    // Now, run the one at the head of the queue.
+    pcb = (PCB *)((QueueFirst (&runQueue))->object);
+    currentPCB = pcb;
+    dbprintf ('p',"About to switch to PCB 0x%x,flags=0x%x @ 0x%x\n",
+    pcb, pcb->flags,
+    pcb->sysStackPtr[PROCESS_STACK_IAR]);
+     */
+
+    // Clean up zombie processes here.  This is done at interrupt time
+    // because it can't be done while the process might still be running
+    while (!QueueEmpty (&zombieQueue)) {
+      pcb = (PCB *)(QueueFirst (&zombieQueue)->object);
+      dbprintf ('p', "Freeing zombie PCB 0x%x.\n", pcb);
+      QueueRemove (&pcb->l);
+      ProcessFreeResources (pcb);
+    }
+    // Set the timer so this process gets at most a fixed quantum of time.
+    TimerSet (processQuantum);
+    dbprintf ('p', "Leaving ProcessSchedule (cur=0x%x)\n", currentPCB);
 }
 
 //----------------------------------------------------------------------
@@ -370,13 +391,34 @@ ProcessSuspend (PCB *suspend)
   void
 ProcessWakeup (PCB *wakeup)
 {
+  int i, sleeptime_inseconds;
+  float temp_estcpu, power;
+
   dbprintf ('p',"Waking up PCB 0x%x.\n", wakeup);
   // Make sure it's not yet a runnable process.
   ASSERT (wakeup->flags & PROCESS_STATUS_WAITING,
       "Trying to wake up a non-sleeping process!\n");
+
+  sleeptime_inseconds = (my_timer_get() - wakeup->sleeptime)/1000;
+
+  // Adjust the estimated CPU time
+  if(sleeptime_inseconds >= 1) {
+    temp_estcpu = ((((float)2 * wakeup->load)/((float)2 * wakeup->load + 1)) * wakeup->estcpu); // Base
+    power = temp_estcpu;
+    for(i = 1; i < sleeptime_inseconds; i++) {
+      temp_estcpu *= power;  // To the power of sleeptime_inseconds
+    }
+    wakeup->estcpu = (int)temp_estcpu;
+  }
+
+  // Recalculate priority
+  wakeup->prio = PUSER + (wakeup->estcpu/4) + (2*wakeup->p_nice);
+  wakeup->runQueueNum = wakeup->prio/4;
+
+  // Put the process on a run queue based on Priority
   ProcessSetStatus (wakeup, PROCESS_STATUS_RUNNABLE);
   QueueRemove (&wakeup->l);
-  QueueInsertLast (&runQueue, &wakeup->l);
+  QueueInsertLast (&runQueue[wakeup->runQueueNum], &wakeup->l);
 
 }
 
@@ -529,20 +571,19 @@ ProcessFork (VoidFunc func, uint32 param, int p_nice, int p_info,char *name, int
 
   //---------------------------------------
   // Lab3: initialized pcb member for your scheduling algorithm here
-  // BEGIN BRIAN CODE
   if((isUser && p_nice < 0) || p_nice > 19) {  // p_nice should never be greater than 19
     pcb->p_nice = 0;
   }
-  else pcb->p_nice = p_nice;
-  pcb->estcpu		= 0;
-  pcb->runtime		= 0;
-  pcb->sleeptime	= 0;
-  pcb->prio		= PUSER;
-  pcb->runQueueNum	= (pcb->prio)/4;
-  pcb->load		= 1;
-  pcb->p_info		= p_info;
-  pcb->p_quanta		= 0;
-  // END BRIAN CODE
+  else pcb->p_nice      = p_nice;
+  pcb->estcpu       		= 0;
+  pcb->runtime      		= 0;
+  //  pcb->runtime_lastrun  = -1;   // -1 to show hasn't been run before
+  pcb->sleeptime	      = 0;
+  pcb->prio		          = PUSER;
+  pcb->runQueueNum	    = (pcb->prio)/4;
+  pcb->load		          = 1;
+  pcb->p_info		        = p_info;
+  pcb->p_quanta		      = 0;
   //--------------------------------------
 
 
